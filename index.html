@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Markdown Preview - Tokyo Night</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #1a1b26;
+    --bg-elevated: #1f2335;
+    --bg-muted: #24283b;
+    --border: #3b4261;
+    --border-muted: #292e42;
+    --fg: #c0caf5;
+    --fg-muted: #a9b1d6;
+    --fg-subtle: #565f89;
+    --accent: #7aa2f7;
+    --accent-2: #bb9af7;
+    --green: #9ece6a;
+    --yellow: #e0af68;
+    --red: #f7768e;
+    --cyan: #7dcfff;
+    --code-bg: #16161e;
+    --shadow: 0 18px 48px rgba(0, 0, 0, .28);
+    --radius: 16px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at top left, rgba(122, 162, 247, .15), transparent 34rem),
+      radial-gradient(circle at top right, rgba(187, 154, 247, .12), transparent 30rem),
+      var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    width: min(960px, 100%);
+    margin: 0 auto;
+    padding: max(18px, env(safe-area-inset-top)) 14px max(32px, env(safe-area-inset-bottom));
+  }
+
+  header {
+    padding: 20px 4px 16px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    gap: .45em;
+    align-items: center;
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  h1.app-title {
+    margin: 8px 0 6px;
+    font-size: clamp(28px, 8vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -.04em;
+  }
+
+  .lead {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 15px;
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: 0 0 16px;
+    padding: 12px;
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .file-row {
+    display: grid;
+    gap: 10px;
+  }
+
+  .file-label {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px dashed var(--border);
+    border-radius: 13px;
+    background: var(--bg-muted);
+    color: var(--fg);
+    text-align: center;
+    font-weight: 700;
+  }
+
+  input[type="file"] {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+    margin-top: 10px;
+    color: var(--fg-muted);
+    font-size: 13px;
+  }
+
+  .options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+
+  .meta {
+    margin-top: 8px;
+    color: var(--fg-subtle);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .panel {
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-muted);
+    background: rgba(22, 22, 30, .6);
+    color: var(--fg-subtle);
+    font-size: 12px;
+  }
+
+  #preview {
+    padding: min(6vw, 34px);
+    overflow-wrap: break-word;
+  }
+
+  .empty {
+    padding: min(10vw, 48px) min(6vw, 34px);
+    color: var(--fg-muted);
+  }
+
+  .empty strong { color: var(--fg); }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    margin: 1.55em 0 .7em;
+    color: #e6edf3;
+    line-height: 1.25;
+    letter-spacing: -.02em;
+  }
+
+  .markdown-body h1:first-child,
+  .markdown-body h2:first-child,
+  .markdown-body h3:first-child { margin-top: 0; }
+
+  .markdown-body h1 {
+    padding-bottom: .28em;
+    border-bottom: 1px solid var(--border);
+    font-size: 2em;
+  }
+
+  .markdown-body h2 {
+    padding-bottom: .25em;
+    border-bottom: 1px solid var(--border-muted);
+    font-size: 1.55em;
+  }
+
+  .markdown-body h3 { font-size: 1.25em; }
+  .markdown-body h4 { font-size: 1.08em; }
+  .markdown-body h5 { font-size: 1em; color: var(--fg-muted); }
+  .markdown-body h6 { font-size: .95em; color: var(--fg-subtle); }
+
+  .markdown-body p,
+  .markdown-body ul,
+  .markdown-body ol,
+  .markdown-body blockquote,
+  .markdown-body table,
+  .markdown-body pre {
+    margin-top: 0;
+    margin-bottom: 1em;
+  }
+
+  .markdown-body a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .markdown-body a:hover { text-decoration: underline; }
+
+  .markdown-body strong { color: #e6edf3; }
+  .markdown-body em { color: var(--fg); }
+  .markdown-body del { color: var(--fg-subtle); }
+
+  .markdown-body hr {
+    height: 1px;
+    margin: 24px 0;
+    border: 0;
+    background: var(--border);
+  }
+
+  .markdown-body blockquote {
+    padding: .05em 1em;
+    border-left: .25em solid var(--accent-2);
+    color: var(--fg-muted);
+    background: rgba(187, 154, 247, .07);
+    border-radius: 0 10px 10px 0;
+  }
+
+  .markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+  .markdown-body ul,
+  .markdown-body ol { padding-left: 1.5em; }
+  .markdown-body li { margin: .25em 0; }
+  .markdown-body li.task { list-style: none; margin-left: -1.4em; }
+  .markdown-body li.task input { margin-right: .55em; transform: translateY(.08em); }
+
+  .markdown-body code {
+    padding: .18em .38em;
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    background: var(--code-bg);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: .88em;
+  }
+
+  .markdown-body pre {
+    overflow: auto;
+    padding: 15px;
+    border: 1px solid var(--border-muted);
+    border-radius: 12px;
+    background: var(--code-bg);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .markdown-body pre code {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--fg);
+    font-size: .86em;
+    line-height: 1.55;
+    white-space: pre;
+  }
+
+  .markdown-body table {
+    display: block;
+    width: 100%;
+    border-collapse: collapse;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .markdown-body th {
+    background: var(--bg-muted);
+    color: #e6edf3;
+    font-weight: 700;
+  }
+
+  .markdown-body tr:nth-child(2n) td { background: rgba(36, 40, 59, .45); }
+
+  .markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-muted);
+    background: var(--bg-muted);
+  }
+
+  .markdown-body .image-placeholder {
+    display: inline-block;
+    padding: .15em .45em;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    color: var(--yellow);
+    background: rgba(224, 175, 104, .08);
+  }
+
+  .markdown-body .footnote {
+    color: var(--fg-subtle);
+    font-size: .9em;
+  }
+
+  @media (max-width: 520px) {
+    body { font-size: 15.5px; }
+    .toolbar { border-radius: 14px; }
+    #preview { padding: 22px 16px; }
+    .markdown-body h1 { font-size: 1.65em; }
+    .markdown-body h2 { font-size: 1.35em; }
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="eyebrow">Markdown Preview</div>
+      <h1 class="app-title">Tokyo Night Markdown Viewer</h1>
+      <p class="lead">ローカルのMarkdownファイルを選択して、Safari内だけでプレビューします。外部ライブラリは読み込みません。</p>
+    </header>
+
+    <section class="toolbar" aria-label="ファイル選択">
+      <div class="file-row">
+        <label class="file-label" for="fileInput">Markdownファイルを選択</label>
+        <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain">
+      </div>
+      <div class="options">
+        <label><input id="showImages" type="checkbox"> 外部画像URLを表示</label>
+        <label><input id="keepLineBreaks" type="checkbox" checked> 段落内の改行を保持</label>
+      </div>
+      <div id="meta" class="meta">未選択</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span>Preview</span>
+        <span id="stats">0 chars</span>
+      </div>
+      <article id="preview" class="markdown-body">
+        <div class="empty">
+          <strong>使い方:</strong><br>
+          上のボタンから <code>.md</code> / <code>.markdown</code> / <code>.txt</code> を選択してください。<br>
+          対応: 見出し、段落、強調、リンク、引用、リスト、タスクリスト、コードフェンス、罫線、簡易テーブル。
+        </div>
+      </article>
+    </section>
+  </main>
+
+<script>
+(() => {
+  "use strict";
+
+  const fileInput = document.getElementById("fileInput");
+  const showImagesInput = document.getElementById("showImages");
+  const keepLineBreaksInput = document.getElementById("keepLineBreaks");
+  const preview = document.getElementById("preview");
+  const meta = document.getElementById("meta");
+  const stats = document.getElementById("stats");
+
+  let currentMarkdown = "";
+  let currentFileName = "";
+
+  const escapeHtml = (value) => String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+  const escapeAttr = escapeHtml;
+
+  const safeUrl = (value) => {
+    const raw = String(value || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+    if (!raw) return "";
+    if (raw.startsWith("#")) return raw;
+    try {
+      const url = new URL(raw, location.href);
+      const ok = ["http:", "https:", "mailto:", "tel:"].includes(url.protocol);
+      return ok ? raw : "";
+    } catch {
+      return "";
+    }
+  };
+
+  const slugify = (() => {
+    const used = new Map();
+    return (text) => {
+      const base = text
+        .toLowerCase()
+        .replace(/<[^>]+>/g, "")
+        .replace(/[\s]+/g, "-")
+        .replace(/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, "")
+        .replace(/^-+|-+$/g, "") || "section";
+      const count = used.get(base) || 0;
+      used.set(base, count + 1);
+      return count ? `${base}-${count}` : base;
+    };
+  })();
+
+  const inline = (source, options) => {
+    const tokens = [];
+    const put = (html) => {
+      const token = `\u0000MDTOKEN${tokens.length}\u0000`;
+      tokens.push(html);
+      return token;
+    };
+
+    let text = String(source || "");
+
+    text = text.replace(/`([^`\n]+)`/g, (_, code) =>
+      put(`<code>${escapeHtml(code)}</code>`)
+    );
+
+    text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, href) => {
+      const url = safeUrl(href);
+      const label = alt ? escapeHtml(alt) : "image";
+      if (!url) return escapeHtml(whole);
+      if (options.showImages) {
+        return put(`<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" loading="lazy">`);
+      }
+      return put(`<span class="image-placeholder">画像: </span> <a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    });
+
+    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, label, href) => {
+      const url = safeUrl(href);
+      if (!url) return escapeHtml(whole);
+      return put(`<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
+    });
+
+    text = escapeHtml(text);
+
+    text = text
+      .replace(/~~([^~]+)~~/g, "<del>$1</del>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      .replace(/(^|[^_])_([^_\n]+)_/g, "$1<em>$2</em>");
+
+    return text.replace(/\u0000MDTOKEN(\d+)\u0000/g, (_, n) => tokens[Number(n)] || "");
+  };
+
+  const splitTableRow = (line) => {
+    const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+    const cells = [];
+    let cell = "";
+    let escaped = false;
+    for (const ch of trimmed) {
+      if (escaped) {
+        cell += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (ch === "|") {
+        cells.push(cell.trim());
+        cell = "";
+        continue;
+      }
+      cell += ch;
+    }
+    cells.push(cell.trim());
+    return cells;
+  };
+
+  const isTableSeparator = (line) => {
+    const cells = splitTableRow(line);
+    return cells.length > 1 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+  };
+
+  const isSpecialStart = (line, next) => {
+    return /^\s*$/.test(line)
+      || /^(```|~~~)/.test(line)
+      || /^#{1,6}\s+/.test(line)
+      || /^\s*>\s?/.test(line)
+      || /^\s*(?:[-+*])\s+/.test(line)
+      || /^\s*\d+\.\s+/.test(line)
+      || /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)
+      || (next !== undefined && line.includes("|") && isTableSeparator(next));
+  };
+
+  const renderMarkdown = (markdown, options = {}) => {
+    const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+    const out = [];
+    const usedSlugs = new Map();
+    const slugify = (text) => {
+      const base = String(text || "")
+        .toLowerCase()
+        .replace(/<[^>]+>/g, "")
+        .replace(/[\s]+/g, "-")
+        .replace(/[!\"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, "")
+        .replace(/^-+|-+$/g, "") || "section";
+      const count = usedSlugs.get(base) || 0;
+      usedSlugs.set(base, count + 1);
+      return count ? `${base}-${count}` : base;
+    };
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const next = lines[i + 1];
+
+      if (/^\s*$/.test(line)) {
+        i += 1;
+        continue;
+      }
+
+      const fenceMatch = line.match(/^(```|~~~)\s*([^`]*)\s*$/);
+      if (fenceMatch) {
+        const fence = fenceMatch[1];
+        const lang = fenceMatch[2].trim().split(/\s+/)[0] || "";
+        const code = [];
+        i += 1;
+        while (i < lines.length && !lines[i].startsWith(fence)) {
+          code.push(lines[i]);
+          i += 1;
+        }
+        if (i < lines.length) i += 1;
+        const langClass = lang ? ` class="language-${escapeAttr(lang)}"` : "";
+        out.push(`<pre><code${langClass}>${escapeHtml(code.join("\n"))}</code></pre>`);
+        continue;
+      }
+
+      const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+      if (heading) {
+        const level = heading[1].length;
+        const body = inline(heading[2], options);
+        const id = slugify(heading[2]);
+        out.push(`<h${level} id="${escapeAttr(id)}">${body}</h${level}>`);
+        i += 1;
+        continue;
+      }
+
+      if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+        out.push("<hr>");
+        i += 1;
+        continue;
+      }
+
+      if (/^\s*>\s?/.test(line)) {
+        const quote = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          quote.push(lines[i].replace(/^\s*>\s?/, ""));
+          i += 1;
+        }
+        out.push(`<blockquote>${renderMarkdown(quote.join("\n"), options)}</blockquote>`);
+        continue;
+      }
+
+      const listMatch = line.match(/^\s*((?:[-+*])|(?:\d+\.))\s+(.+)$/);
+      if (listMatch) {
+        const ordered = /\d+\./.test(listMatch[1]);
+        const tag = ordered ? "ol" : "ul";
+        const items = [];
+        while (i < lines.length) {
+          const m = lines[i].match(/^\s*((?:[-+*])|(?:\d+\.))\s+(.+)$/);
+          if (!m || (/\d+\./.test(m[1]) !== ordered)) break;
+          let item = m[2];
+          let task = "";
+          const taskMatch = item.match(/^\[( |x|X)\]\s+(.+)$/);
+          if (taskMatch) {
+            const checked = taskMatch[1].toLowerCase() === "x" ? " checked" : "";
+            task = `<input type="checkbox" disabled${checked}>`;
+            item = taskMatch[2];
+            items.push(`<li class="task">${task}${inline(item, options)}</li>`);
+          } else {
+            items.push(`<li>${inline(item, options)}</li>`);
+          }
+          i += 1;
+        }
+        out.push(`<${tag}>${items.join("")}</${tag}>`);
+        continue;
+      }
+
+      if (line.includes("|") && next !== undefined && isTableSeparator(next)) {
+        const header = splitTableRow(line);
+        const align = splitTableRow(next).map(cell => {
+          if (/^:-+:$/.test(cell)) return "center";
+          if (/^-+:$/.test(cell)) return "right";
+          if (/^:-+$/.test(cell)) return "left";
+          return "";
+        });
+        i += 2;
+        const rows = [];
+        while (i < lines.length && lines[i].includes("|") && !/^\s*$/.test(lines[i])) {
+          rows.push(splitTableRow(lines[i]));
+          i += 1;
+        }
+        const th = header.map((cell, idx) => {
+          const style = align[idx] ? ` style="text-align:${align[idx]}"` : "";
+          return `<th${style}>${inline(cell, options)}</th>`;
+        }).join("");
+        const tr = rows.map(row => `<tr>${row.map((cell, idx) => {
+          const style = align[idx] ? ` style="text-align:${align[idx]}"` : "";
+          return `<td${style}>${inline(cell, options)}</td>`;
+        }).join("")}</tr>`).join("");
+        out.push(`<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`);
+        continue;
+      }
+
+      const para = [];
+      while (i < lines.length && !isSpecialStart(lines[i], lines[i + 1])) {
+        para.push(lines[i]);
+        i += 1;
+      }
+      if (para.length) {
+        const joined = options.keepLineBreaks ? para.join("\n") : para.join(" ");
+        out.push(`<p>${inline(joined, options).replace(/\n/g, "<br>")}</p>`);
+        continue;
+      }
+
+      out.push(`<p>${inline(line, options)}</p>`);
+      i += 1;
+    }
+
+    return out.join("\n");
+  };
+
+  const formatBytes = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
+  const render = () => {
+    if (!currentMarkdown) return;
+    const options = {
+      showImages: showImagesInput.checked,
+      keepLineBreaks: keepLineBreaksInput.checked
+    };
+    preview.innerHTML = renderMarkdown(currentMarkdown, options);
+    stats.textContent = `${currentMarkdown.length.toLocaleString()} chars`;
+    document.title = currentFileName ? `${currentFileName} - Markdown Preview` : "Markdown Preview - Tokyo Night";
+  };
+
+  fileInput.addEventListener("change", async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      currentMarkdown = await file.text();
+      currentFileName = file.name;
+      meta.textContent = `${file.name} / ${formatBytes(file.size)} / ${new Date(file.lastModified).toLocaleString()}`;
+      render();
+    } catch (error) {
+      preview.innerHTML = `<div class="empty"><strong>読み込みに失敗しました。</strong><br>${escapeHtml(error && error.message ? error.message : String(error))}</div>`;
+      meta.textContent = "読み込みエラー";
+    }
+  });
+
+  showImagesInput.addEventListener("change", render);
+  keepLineBreaksInput.addEventListener("change", render);
+})();
+</script>
+</body>
+</html>
